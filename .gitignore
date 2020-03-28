@@ -1,0 +1,6 @@
+/tools
+.idea
+.coverage
+/__pycache__
+
+*.wav
