@@ -10,6 +10,7 @@ import re
 
 TOTAL_NOTES = 12
 
+
 class GuitarFFT:
     def __init__(self):
         self.raw_wav = None
@@ -34,11 +35,16 @@ class GuitarFFT:
         freq = np.fft.rfftfreq(n, time_step)
 
         if noise is not None:
-            sp_normalized = (np.abs(sp) / (n * 2)) - noise
+            sp_corrected = (np.abs(sp) / (n * 2)) - noise
         else:
-            sp_normalized = np.abs(sp) / (n * 2)
+            sp_corrected = np.abs(sp) / (n * 2)
 
-        return freq, sp_normalized
+        sp_normalized = sp_corrected / sp_corrected.max()
+
+        #ret_sp = self.window_smooth(sp_normalized, 6)
+        ret_sp = sp_normalized
+
+        return freq, ret_sp
 
     def load_file(self, file_name):
         rate, wav_data = scipy.io.wavfile.read(file_name)
@@ -50,6 +56,19 @@ class GuitarFFT:
     def filter_wav(self, data, rate, wn, filter_type):
         sos = signal.butter(10, wn, filter_type, fs=rate, output='sos')
         return signal.sosfilt(sos, data)
+
+    def window_smooth(self, data, window_size):
+        n = data.size
+        padded_data = np.zeros(n + window_size)
+        half_window_size = int(window_size/2)
+        padded_data[half_window_size:n+half_window_size] = data
+        ret_arr = np.zeros(n)
+
+        for i in range(n - half_window_size):
+            ret_arr[i] = np.average(padded_data[i:i+window_size])
+
+        return ret_arr
+
 
     def get_peaks(self, freq, spec, thres, min_dist):
         peak_indexes = peakutils.indexes(spec, thres=thres, min_dist=min_dist, thres_abs=True)
@@ -130,9 +149,10 @@ class GuitarFFT:
         filtered_data = self.filter_wav(raw_data, rate, (80, 1500), 'bandpass')
         frequencies, spec = self.calc_fft(filtered_data, rate, n)
 
-        freq_min_dist = 20 #you cant play two notes 20hz apart on guitar at same time
+        freq_min_dist = 20 # you cant play two notes 20hz apart on guitar at same time
         idx_min_dist = (freq_min_dist / (rate/2)) * (n/2)
-        f_peaks, id_peaks = self.get_peaks(frequencies, spec, 1.5, idx_min_dist)
+        #TODO threshold value
+        f_peaks, id_peaks = self.get_peaks(frequencies, spec, 0.007, idx_min_dist)
 
         chord_name = self.get_chord(f_peaks)
         print(chord_name)
@@ -144,7 +164,10 @@ guitar_fft.basic_operate('E major.wav')
 
 #TODO and notes:  interpolate thing on peaks
 #mag of lower freq are low - do some research? maybe some hz to mag ratio?
-#add noise func
+
 #remember, "noise" or nosiy fft is not actual noise in time domain, not really
 #averaging fft is  common practice
-#make func to detect notes
+#make func to detect notes -- improve, other chords,
+#threshold algorithm?
+#combine with live input, either find note very 0.5sec if not too slow, how ot print?
+#only detect chord if there is input detected?
