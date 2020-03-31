@@ -53,6 +53,16 @@ class GuitarFFT:
 
         return rate, wav_data
 
+    def record_audio(self, length):
+        fs = 44100 #TODO
+        duration = length
+        wav_data = sd.rec(int(duration * fs), samplerate=fs, channels=2)
+        sd.wait()
+
+        if wav_data.shape[1] > 1:
+            wav_data = wav_data[:, 0]
+        return fs, wav_data
+
     def filter_wav(self, data, rate, wn, filter_type):
         sos = signal.butter(10, wn, filter_type, fs=rate, output='sos')
         return signal.sosfilt(sos, data)
@@ -68,7 +78,6 @@ class GuitarFFT:
             ret_arr[i] = np.average(padded_data[i:i+window_size])
 
         return ret_arr
-
 
     def get_peaks(self, freq, spec, thres, min_dist):
         peak_indexes = peakutils.indexes(spec, thres=thres, min_dist=min_dist, thres_abs=True)
@@ -88,29 +97,54 @@ class GuitarFFT:
             if note_letter.group(1) not in unique_notes:
                unique_notes.append(note_letter.group(1))
 
-        root_note = unique_notes[0]
         num_notes = len(unique_notes)
-
+        chord = 'None'
         if num_notes == 3:
-            major, minor = self.get_triad(root_note)
+            chord = self.find_triad(unique_notes)
 
-            if major[1] in unique_notes and major[2]in unique_notes:
-                return root_note + ' major'
-            elif minor[1] in unique_notes and minor[2]in unique_notes:
-                return root_note + ' minor'
-            else:
-                return 'err'
+        return chord
 
-    def get_triad(self, root_note):
+    def find_triad(self, notes):
+        chord_name = 'Unknown'
+        for idx, root_note in enumerate(notes):
+            triad_notes = self.get_triad_types(root_note)
+
+            slash_chord = ''
+            inversion = ''
+            if idx > 0:
+                slash_chord = notes[0] + '/'
+
+            for triad_type in triad_notes:
+                if triad_notes[triad_type][1] in notes and triad_notes[triad_type][2] in notes:
+                    if notes[0] == triad_notes[triad_type][1]:
+                        inversion = ' (first inversion)'
+                    elif notes[0] == triad_notes[triad_type][2]:
+                        inversion = ' (second inversion)'
+
+                    chord_name = slash_chord + root_note + ' ' + triad_type + inversion
+
+                    return chord_name
+
+    def get_triad_types(self, root_note):
+        triad_types = {
+            "Major": [4, 7],
+            "Minor": [3, 7],
+            "Diminished": [3, 6],
+            "Sus2": [2, 7],
+            "Sus4": [5, 7],
+        }
+
+        triad_notes = {}
+
         root_ind = self.musical_alphabet.index(root_note)
-        minor_third = self.musical_alphabet[(root_ind + 3) % TOTAL_NOTES]
-        major_third = self.musical_alphabet[(root_ind + 4) % TOTAL_NOTES]
-        fifth = self.musical_alphabet[(root_ind + 7) % TOTAL_NOTES]
+        for triad_type in triad_types:
+            notes = [root_note]
+            for interval in triad_types[triad_type]:
+                notes.append(self.musical_alphabet[(root_ind + interval) % TOTAL_NOTES])
 
-        maj = [root_note, major_third, fifth]
-        min = [root_note, minor_third, fifth]
+            triad_notes[triad_type] = notes
 
-        return  maj, min
+        return triad_notes
 
     def plot_data(self, data, freq, spec, peak_idx):
         plt.subplot(1, 2, 1)
@@ -139,12 +173,20 @@ class GuitarFFT:
 
         freq_peaks = np.asarray(freq_peaks)
 
-    def basic_operate(self, file):
-        rate, raw_data = self.load_file(file)
-        noise_rate, noise_raw_data = self.load_file('E major noise.wav')
+    def basic_operate(self, noise, file=None, length=3):
+        if file:
+            rate, raw_data = self.load_file(file)
+            noise_rate, noise_raw_data = self.load_file('E major noise.wav')
+        else:
+            if noise:
+                noise_rate, noise_raw_data = self.record_audio(length)
+            print('Recording...')
+            rate, raw_data = self.record_audio(length)
+            print('Recording done!')
         n = raw_data.size
 
-        noise_f, noise_spec = self.calc_fft(noise_raw_data, noise_rate, n)
+        if noise:
+            noise_f, noise_spec = self.calc_fft(noise_raw_data, noise_rate, n)
 
         filtered_data = self.filter_wav(raw_data, rate, (80, 1500), 'bandpass')
         frequencies, spec = self.calc_fft(filtered_data, rate, n)
@@ -159,8 +201,9 @@ class GuitarFFT:
         self.plot_data(raw_data, frequencies, spec, id_peaks)
 
 
-guitar_fft = GuitarFFT()
-guitar_fft.basic_operate('E major.wav')
+if __name__ == '__main__':
+    guitar_fft = GuitarFFT()
+    guitar_fft.basic_operate(False, length=3)
 
 #TODO and notes:  interpolate thing on peaks
 #mag of lower freq are low - do some research? maybe some hz to mag ratio?
