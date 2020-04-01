@@ -95,54 +95,66 @@ class GuitarFFT:
             print(str(frequency) + 'Hz, ' + str(note))
             note_letter = re.search(r'(.*?)[0-9].*', note)
             if note_letter.group(1) not in unique_notes:
-               unique_notes.append(note_letter.group(1))
+                unique_notes.append(note_letter.group(1))
 
         num_notes = len(unique_notes)
-        chord = 'None'
+        chord = 'Unknown'
         if num_notes == 3:
-            chord = self.find_triad(unique_notes)
+            chord = self.find_chords(unique_notes)
 
         return chord
 
-    def find_triad(self, notes):
-        chord_name = 'Unknown'
+    def find_chords(self, notes):
+        chord_names = []
         for idx, root_note in enumerate(notes):
-            triad_notes = self.get_triad_types(root_note)
-
-            slash_chord = ''
-            inversion = ''
-            if idx > 0:
-                slash_chord = notes[0] + '/'
+            triad_notes = self.get_chord_types(root_note)
 
             for triad_type in triad_notes:
-                if triad_notes[triad_type][1] in notes and triad_notes[triad_type][2] in notes:
-                    if notes[0] == triad_notes[triad_type][1]:
-                        inversion = ' (first inversion)'
-                    elif notes[0] == triad_notes[triad_type][2]:
-                        inversion = ' (second inversion)'
+                slash_chord = ''
+                inversion = ''
+
+                if set(triad_notes[triad_type]) == set(notes):
+                    try:
+                        if notes[0] == triad_notes[triad_type][1]:
+                            slash_chord = notes[0] + '/'
+                            inversion = ' (first inversion)'
+                        elif notes[0] == triad_notes[triad_type][2]:
+                            slash_chord = notes[0] + '/'
+                            inversion = ' (second inversion)'
+                    except IndexError:
+                        pass
 
                     chord_name = slash_chord + root_note + ' ' + triad_type + inversion
 
-                    return chord_name
+                    chord_names.append(chord_name)
+        return chord_names
 
-    def get_triad_types(self, root_note):
-        triad_types = {
+    def get_chord_types(self, root_note):
+        chord_types = {
             "Major": [4, 7],
             "Minor": [3, 7],
             "Diminished": [3, 6],
             "Sus2": [2, 7],
             "Sus4": [5, 7],
+            "Major Seventh": [4, 7, 11],
+            "Minor Seventh": [3, 7, 10],
+            "Dominant Seventh": [4, 7, 10],
+            "Augmented": [4, 8],
+            "Dominant Ninth": [4, 7, 10, 14],
+            "Major Eleventh": [4, 7, 11, 14, 17],
+            "Add9": [4, 7, 14],
+            "5": [7],
         }
 
         triad_notes = {}
 
         root_ind = self.musical_alphabet.index(root_note)
-        for triad_type in triad_types:
+        for chord_type in chord_types:
             notes = [root_note]
-            for interval in triad_types[triad_type]:
+            for interval in chord_types[chord_type]:
                 notes.append(self.musical_alphabet[(root_ind + interval) % TOTAL_NOTES])
 
-            triad_notes[triad_type] = notes
+            triad_notes[chord_type] = notes
 
         return triad_notes
 
@@ -174,22 +186,26 @@ class GuitarFFT:
         freq_peaks = np.asarray(freq_peaks)
 
     def basic_operate(self, noise, file=None, length=3):
+        noise_spec = None
         if file:
             rate, raw_data = self.load_file(file)
             noise_rate, noise_raw_data = self.load_file('E major noise.wav')
         else:
             if noise:
+                print('Recording noise...')
                 noise_rate, noise_raw_data = self.record_audio(length)
-            print('Recording...')
+                noise_f, noise_spec = self.calc_fft(noise_raw_data, noise_rate, noise_raw_data.size)
+
+            print('Recording audio...')
             rate, raw_data = self.record_audio(length)
             print('Recording done!')
         n = raw_data.size
 
-        if noise:
-            noise_f, noise_spec = self.calc_fft(noise_raw_data, noise_rate, n)
-
         filtered_data = self.filter_wav(raw_data, rate, (80, 1500), 'bandpass')
-        frequencies, spec = self.calc_fft(filtered_data, rate, n)
+        if noise:
+            frequencies, spec = self.calc_fft(filtered_data, rate, n, noise_spec)
+        else:
+            frequencies, spec = self.calc_fft(filtered_data, rate, n)
 
         freq_min_dist = 20 # you cant play two notes 20hz apart on guitar at same time
         idx_min_dist = (freq_min_dist / (rate/2)) * (n/2)
@@ -197,20 +213,15 @@ class GuitarFFT:
         f_peaks, id_peaks = self.get_peaks(frequencies, spec, 0.007, idx_min_dist)
 
         chord_name = self.get_chord(f_peaks)
-        print(chord_name)
+        print(chord_name[0])
         self.plot_data(raw_data, frequencies, spec, id_peaks)
 
 
 if __name__ == '__main__':
     guitar_fft = GuitarFFT()
-    guitar_fft.basic_operate(False, length=3)
+    guitar_fft.basic_operate(True, length=3)
 
-#TODO and notes:  interpolate thing on peaks
-#mag of lower freq are low - do some research? maybe some hz to mag ratio?
-
-#remember, "noise" or nosiy fft is not actual noise in time domain, not really
-#averaging fft is  common practice
-#make func to detect notes -- improve, other chords,
-#threshold algorithm?
+#TODO and notes:  interpolate thing on peaks?
 #combine with live input, either find note very 0.5sec if not too slow, how ot print?
 #only detect chord if there is input detected?
+#with the exact Hz, we can determine the exact note/string/fret

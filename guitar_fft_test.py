@@ -13,6 +13,14 @@ def test_find_triad():
                   ['E', 'G', 'A#'],
                   ['E', 'A', 'B'],
                   ['E', 'F#', 'B'],
+                  ['C', 'E', 'G', 'B'],
+                  ['C', 'D#', 'G', 'A#'],
+                  ['C', 'E', 'G', 'A#'],
+                  ['C', 'E', 'G#'],
+                  ['C', 'E', 'G', 'A#', 'D'],
+                  ['C', 'E', 'G', 'B', 'D', 'F'],
+                  ['C', 'E', 'G', 'D'],
+                  ['C', 'G'],
                   ]
     expected_chord = ['E Major',
                       'E Major',
@@ -24,17 +32,35 @@ def test_find_triad():
                       'E Diminished',
                       'E Sus4',
                       'E Sus2',
+                      'C Major Seventh',
+                      'C Minor Seventh',
+                      'C Dominant Seventh',
+                      'C Augmented',
+                      'C Dominant Ninth',
+                      'C Major Eleventh',
+                      'C Add9',
+                      'C 5',
                       ]
 
+    pass_count = 0
+    fail_count = 0
     for i, notes in enumerate(notes_list):
-        chord_name = guitarFFT.find_triad(notes)
-        if chord_name == expected_chord[i]:
+        chord_names = guitarFFT.find_chords(notes)
+        if chord_names[0] == expected_chord[i]:
+            pass_count += 1
             print('Pass')
         else:
+            fail_count += 1
             print('Fail:')
             print(notes)
-            print('actual: ' + chord_name + ', expected: ' + expected_chord[i])
+            print('Expected: ' + expected_chord[i])
+            print('Actual:')
+            for chord in chord_names:
+                print(chord)
 
+    print('\n')
+    print('Pass: ' + str(pass_count))
+    print('Pass: ' + str(fail_count))
 
 if __name__ == '__main__':
     test_find_triad()
