@@ -1,8 +1,8 @@
-from guitar import guitar_fft
-
+import guitar_fft
+import matplotlib.pyplot as plt
 
 def test_find_triad():
-    guitarFFT = guitar_fft.GuitarFFT()
+    guitar = guitar_fft.GuitarFFT()
     notes_list = [['E', 'G#', 'B'],
                   ['E', 'B', 'G#'],
                   ['G#', 'E', 'B'],
@@ -45,7 +45,7 @@ def test_find_triad():
     pass_count = 0
     fail_count = 0
     for i, notes in enumerate(notes_list):
-        chord_names = guitarFFT.find_chords(notes)
+        chord_names = guitar.find_chords(notes)
         if chord_names[0] == expected_chord[i]:
             pass_count += 1
             print('Pass')
@@ -61,6 +61,31 @@ def test_find_triad():
     print('\n')
     print('Pass: ' + str(pass_count))
     print('Pass: ' + str(fail_count))
+
+
+def test_filter_wav():
+    guitar = guitar_fft.GuitarFFT()
+    file = "a_maj.wav"
+    rate, raw_data = guitar.load_file(file)
+
+    n = raw_data.size
+    filtered_data = guitar.filter_wav(raw_data, rate, (80, 1000), 'bandpass')
+
+    freq_raw, spec_raw = guitar.calc_fft(raw_data, rate, n)
+    freq_filtered, spec_filtered = guitar.calc_fft(filtered_data, rate, n)
+
+    plt.subplot(1, 2, 1)
+    plt.title('raw data')
+    plt.plot(freq_raw, spec_raw)
+    plt.xlim(-10, 5000)
+
+    plt.subplot(1, 2, 2)
+    plt.title('filtered data')
+    plt.plot(freq_filtered, spec_filtered)
+    plt.xlim(-10, 5000)
+
+    plt.show()
+
 
 if __name__ == '__main__':
     test_find_triad()
