@@ -1,6 +1,9 @@
 import re
 import numpy as np
 import json
+from pathlib import Path
+
+RESOURCE_FOLDER = Path(__file__).parent.parent / "resources"
 
 # Used to limit the notes taken from frequencies, the first six notes should
 # be the only relevant ones as there are 6 strings right?
@@ -39,7 +42,8 @@ CHORD_TYPES = {
 
 class MusicTheory:
     def __init__(self):
-        freq_dict = json.loads(open('note_frequencies.json').read())
+        print("RESOURCE_FOLDER: " + str(RESOURCE_FOLDER))
+        freq_dict = json.loads(open(RESOURCE_FOLDER / "note_frequencies.json").read())
         self.note_frequencies = [[k, v] for k, v in freq_dict.items()]
         self.frequencies_np_arr = np.array(
             list(zip(*self.note_frequencies))[1])
