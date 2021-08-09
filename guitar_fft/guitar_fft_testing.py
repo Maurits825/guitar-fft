@@ -1,4 +1,4 @@
-from guitar_fft import GuitarFFT
+from guitar_fft.fft import GuitarFFT
 import matplotlib.pyplot as plt
 from pathlib import Path
 
@@ -7,7 +7,7 @@ RESOURCE_FOLDER = Path(__file__).parent.parent / "resources"
 
 def test_filter_wav():
     guitar = GuitarFFT()
-    file = RESOURCE_FOLDER / "a_maj.wav"
+    file = RESOURCE_FOLDER / "recording.wav"
     rate, raw_data = guitar.load_file(file)
 
     n = raw_data.size
@@ -27,3 +27,7 @@ def test_filter_wav():
     plt.xlim(-10, 5000)
 
     plt.show()
+
+
+if __name__ == '__main__':
+    test_filter_wav()

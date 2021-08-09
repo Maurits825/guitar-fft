@@ -158,7 +158,7 @@ class GuitarFFT:
 
 if __name__ == '__main__':
     guitar_fft = GuitarFFT()
-    guitar_fft.basic_file_operate(file="../resources/a_maj.wav")
+    guitar_fft.basic_file_operate(file="../resources/recording.wav")
 
 #TODO and notes:  interpolate thing on peaks?
 #combine with live input, either find note very 0.5sec if not too slow, how ot print?

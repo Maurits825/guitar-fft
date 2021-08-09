@@ -43,7 +43,9 @@ CHORD_TYPES = {
 class MusicTheory:
     def __init__(self):
         print("RESOURCE_FOLDER: " + str(RESOURCE_FOLDER))
-        freq_dict = json.loads(open(RESOURCE_FOLDER / "note_frequencies.json").read())
+        with open(RESOURCE_FOLDER / "note_frequencies.json") as notes_json:
+            freq_dict = json.loads(notes_json.read())
+
         self.note_frequencies = [[k, v] for k, v in freq_dict.items()]
         self.frequencies_np_arr = np.array(
             list(zip(*self.note_frequencies))[1])
@@ -126,6 +128,7 @@ class MusicTheory:
 
     def find_scale(self, notes):
         print('Notes match following scales:')
+        scales = []
         for scale in self.scales:
             match = True
             for note in notes:
@@ -134,4 +137,7 @@ class MusicTheory:
                     break
 
             if match:
+                scales.append(scale)
                 print(scale)
+
+        return scales
