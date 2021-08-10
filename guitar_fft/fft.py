@@ -36,7 +36,11 @@ class GuitarFFT:
         else:
             sp_corrected = np.abs(sp) / (n * 2)
 
-        sp_normalized = sp_corrected / sp_corrected.max()
+        max_sp = sp_corrected.max()
+        if max_sp != 0:
+            sp_normalized = sp_corrected / sp_corrected.max()
+        else:
+            sp_normalized = sp_corrected
 
         #ret_sp = self.window_smooth(sp_normalized, 6)
         ret_sp = sp_normalized

@@ -15,6 +15,8 @@ RESOURCE_FOLDER = Path(__file__).parent.parent / "resources"
 GUITAR_STRINGS = 6
 
 TOTAL_NOTES = 12
+
+#TODO add below is json file?
 MUSICAL_ALPHABET = ['A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#',
                     'G', 'G#']
 SCALE_PATTERNS = {
@@ -42,7 +44,6 @@ CHORD_TYPES = {
 
 class MusicTheory:
     def __init__(self):
-        print("RESOURCE_FOLDER: " + str(RESOURCE_FOLDER))
         with open(RESOURCE_FOLDER / "note_frequencies.json") as notes_json:
             freq_dict = json.loads(notes_json.read())
 

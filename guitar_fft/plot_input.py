@@ -137,7 +137,7 @@ class PlotInput:
 @click.option('--device', '-d', help='input device (numeric ID or substring), leave blank for default device')
 @click.option('--channels', '-c', help='input channels to plot', multiple=True, default=[1], show_default=True)
 def main(list_devices, blocksize, samplerate, downsample, interval, window, device, channels):
-
+    """Program to plot input audio and perform fft. Run with no options to use default device and options."""
     if list_devices:
         print(sd.default.device)
         print("------")
