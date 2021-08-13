@@ -9,7 +9,7 @@ import music_theory as mt
 
 # The lowest and highest Hz that can be played on 24 fret guitar in standard tunning
 GUITAR_LOW_HZ_CUTOFF = 70
-GUITAR_HIGH_HZ_CUTOFF = 1500
+GUITAR_HIGH_HZ_CUTOFF = 1300
 GUITAR_MIN_HZ = 20  # you cant play two notes 20hz apart on guitar at same time
 
 
@@ -24,8 +24,9 @@ class GuitarFFT:
         self.peak_frequencies = None
         self.music_theory = mt.MusicTheory()
 
-    def calc_fft(self, data, rate, n, noise=None):
-        data = data * np.hamming(data.size)
+    def calc_fft(self, data, rate, n, noise=None, do_hamming=True):
+        if do_hamming:
+            data = data * np.hamming(data.size)
         time_step = 1. / rate
 
         sp = np.fft.rfft(data, n)
@@ -129,8 +130,8 @@ class GuitarFFT:
         noise_spec = None
         rate, raw_data = self.load_file(file)
         if noise_file:
-                noise_rate, noise_raw_data = self.load_file(noise_file)
-                _, noise_spec = self.calc_fft(noise_raw_data, noise_rate, noise_raw_data.size)
+            noise_rate, noise_raw_data = self.load_file(noise_file)
+            _, noise_spec = self.calc_fft(noise_raw_data, noise_rate, noise_raw_data.size)
 
         return raw_data, rate, noise_spec
 
@@ -147,6 +148,9 @@ class GuitarFFT:
                                            idx_min_dist)
 
         chord_name = self.music_theory.get_chords(f_peaks)
+        notes = self.music_theory.get_unique_notes(f_peaks)
+        print('Notes:')
+        print(notes)
         print('Chords:')
         print(chord_name)
         self.plot_data(raw_data, frequencies, spec, id_peaks)
@@ -162,7 +166,7 @@ class GuitarFFT:
 
 if __name__ == '__main__':
     guitar_fft = GuitarFFT()
-    guitar_fft.basic_file_operate(file="../resources/recording.wav")
+    guitar_fft.basic_file_operate(file="../resources/amin.wav")
 
 #TODO and notes:  interpolate thing on peaks?
 #combine with live input, either find note very 0.5sec if not too slow, how ot print?

@@ -64,11 +64,9 @@ class MusicTheory:
         return self.note_frequencies[idx][0]
 
     def get_unique_notes(self, peak_frequencies):
-        print("Notes:")
         unique_notes = []
         for frequency in peak_frequencies[:GUITAR_STRINGS]:
             note = self.get_note(frequency)
-            print(str(round(frequency, 2)) + 'Hz, ' + str(note))
             note_letter = re.search(r'(.*?)[0-9].*', note).group(1)
             if note_letter not in unique_notes:
                 unique_notes.append(note_letter)
