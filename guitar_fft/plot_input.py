@@ -83,9 +83,6 @@ class PlotInput:
                 self.note_start = time.time()
                 self.get_notes(self.freq, self.spec)
                 self.print_count = self.print_count + 1
-                print("Print count: " + str(self.print_count), flush=True)
-                # print("data size: " + str(self.plot_data.size), flush=True)
-                # print("freq 15/500: " + str(freq[15]) + "/" + str(freq[500]), flush=True)
 
         self.line[0].set_ydata(self.plot_data)
         self.line[1].set_ydata(self.spec)
@@ -98,7 +95,7 @@ class PlotInput:
     def get_notes(self, frequencies, spec):
         idx_min_dist = (GUITAR_MIN_HZ / (self.samplerate / 2)) * (self.plot_data.size / 2)
         # TODO threshold value
-        threshold = 0.06
+        threshold = 0.2
         f_peaks, id_peaks = self.guitar_fft.get_peaks(frequencies, spec, threshold, idx_min_dist)
         chord_name = self.music_theory.get_chords(f_peaks)
         unique_notes = self.music_theory.get_unique_notes(f_peaks)
@@ -107,8 +104,6 @@ class PlotInput:
         print(chord_name, flush=True)
         print("Notes: ", flush=True)
         print(unique_notes, flush=True)
-        # print("F peaks: ", flush=True)
-        # print(f_peaks, flush=True)
 
     def setup_plot(self):
         try:
@@ -126,7 +121,7 @@ class PlotInput:
                 ax1.legend(['channel {}'.format(c) for c in self.channels], loc='lower left', ncol=len(self.channels))
 
             ax1.axis((0, len(self.plot_data), -0.05, 0.05))
-            ax2.axis((0, 1500, -0.1, 1.1))
+            ax2.axis((0, 1000, -0.1, 1.1))
             ax1.set_yticks([0])
             ax1.yaxis.grid(True)
             ax1.tick_params(bottom=False, top=False, labelbottom=False,

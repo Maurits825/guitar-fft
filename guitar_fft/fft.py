@@ -8,8 +8,8 @@ from scipy import signal
 import music_theory as mt
 
 # The lowest and highest Hz that can be played on 24 fret guitar in standard tunning
-GUITAR_LOW_HZ_CUTOFF = 70
-GUITAR_HIGH_HZ_CUTOFF = 1300
+GUITAR_LOW_HZ_CUTOFF = 20
+GUITAR_HIGH_HZ_CUTOFF = 1000
 GUITAR_MIN_HZ = 20  # you cant play two notes 20hz apart on guitar at same time
 
 
