@@ -36,7 +36,7 @@ class PlotInput:
         self.mapping = [c - 1 for c in channels]  # Channel numbers start with 1
         self.queue = queue.Queue()
 
-        self.plotdata = None
+        self.plot_data = None
         self.line = None
         self.spec = None
         self.freq = None
@@ -48,14 +48,14 @@ class PlotInput:
 
         self.setup_plot()
 
-    def audio_callback(self, indata, frames, time, status):
+    def audio_callback(self, indata, _, __, status):
         """This is called (from a separate thread) for each audio block."""
         if status:
             print(status, file=sys.stderr)
         # Fancy indexing with mapping creates a (necessary!) copy:
         self.queue.put(indata[::self.downsample, self.mapping])
 
-    def update_plot(self, frame):
+    def update_plot(self, _):
         """This is called by matplotlib for each plot update.
 
         Typically, audio callbacks happen more frequently than plot updates,
@@ -68,15 +68,15 @@ class PlotInput:
             except queue.Empty:
                 break
             shift = len(data)
-            self.plotdata = np.roll(self.plotdata, -shift, axis=0)
-            self.plotdata[-shift:, :] = data
+            self.plot_data = np.roll(self.plot_data, -shift, axis=0)
+            self.plot_data[-shift:, :] = data
 
             if (time.time() - self.fft_start) > self.fft_update:
                 self.fft_start = time.time()
-                formatted_data = self.plotdata.ravel()
+                formatted_data = self.plot_data.ravel()
                 filtered_data = self.guitar_fft.filter_wav(formatted_data, self.samplerate,
                                                            (GUITAR_LOW_HZ_CUTOFF, GUITAR_HIGH_HZ_CUTOFF), 'bandpass')
-                #TODO self.freq doesnt change once program started, can replace with _ maybe
+                # TODO self.freq doesnt change once program started, can replace with _ maybe
                 self.freq, self.spec = self.calc_fft(filtered_data, self.samplerate)
 
             if (time.time() - self.note_start) > 1:
@@ -84,38 +84,19 @@ class PlotInput:
                 self.get_notes(self.freq, self.spec)
                 self.print_count = self.print_count + 1
                 print("Print count: " + str(self.print_count), flush=True)
-                # print("data size: " + str(self.plotdata.size), flush=True)
+                # print("data size: " + str(self.plot_data.size), flush=True)
                 # print("freq 15/500: " + str(freq[15]) + "/" + str(freq[500]), flush=True)
 
-        self.line[0].set_ydata(self.plotdata)
+        self.line[0].set_ydata(self.plot_data)
         self.line[1].set_ydata(self.spec)
 
         return self.line
 
     def calc_fft(self, data, rate):
-        n = data.size
-        #TODO find difference between these two
-        if True:
-            return self.guitar_fft.calc_fft(data, rate, n)
-        else:
-            data = data * np.hamming(n)
-            time_step = 1. / rate
-
-            sp = np.fft.rfft(data)
-            freq = np.fft.rfftfreq(n, time_step)
-
-            sp_processed = sp.real * sp.real
-
-            max_v = sp_processed.max()
-            if max_v != 0:
-                sp_normalized = sp_processed / max_v
-            else:
-                sp_normalized = sp_processed
-
-            return freq, sp_normalized
+        return self.guitar_fft.calc_fft(data, rate, data.size)
 
     def get_notes(self, frequencies, spec):
-        idx_min_dist = (GUITAR_MIN_HZ / (self.samplerate / 2)) * (self.plotdata.size / 2)
+        idx_min_dist = (GUITAR_MIN_HZ / (self.samplerate / 2)) * (self.plot_data.size / 2)
         # TODO threshold value
         threshold = 0.06
         f_peaks, id_peaks = self.guitar_fft.get_peaks(frequencies, spec, threshold, idx_min_dist)
@@ -126,26 +107,25 @@ class PlotInput:
         print(chord_name, flush=True)
         print("Notes: ", flush=True)
         print(unique_notes, flush=True)
-        #print("F peaks: ", flush=True)
-        #print(f_peaks, flush=True)
+        # print("F peaks: ", flush=True)
+        # print(f_peaks, flush=True)
 
     def setup_plot(self):
         try:
             length = int(self.window * self.samplerate / (1000 * self.downsample))
-            self.plotdata = np.zeros((length, len(self.channels)))
+            self.plot_data = np.zeros((length, len(self.channels)))
 
-            self.freq, self.spec = self.calc_fft(self.plotdata.ravel(), self.samplerate)
+            self.freq, self.spec = self.calc_fft(self.plot_data.ravel(), self.samplerate)
 
             fig, (ax1, ax2) = plt.subplots(1, 2)
-            line1, = ax1.plot(self.plotdata)
-            line2, = ax2.plot(self.freq, self.spec) # TODO freq only used here?
+            line1, = ax1.plot(self.plot_data)
+            line2, = ax2.plot(self.freq, self.spec)  # TODO freq only used here?
             self.line = [line1, line2]
 
             if len(self.channels) > 1:
-                ax1.legend(['channel {}'.format(c) for c in self.channels],
-                          loc='lower left', ncol=len(self.channels))
+                ax1.legend(['channel {}'.format(c) for c in self.channels], loc='lower left', ncol=len(self.channels))
 
-            ax1.axis((0, len(self.plotdata), -0.05, 0.05))
+            ax1.axis((0, len(self.plot_data), -0.05, 0.05))
             ax2.axis((0, 1500, -0.1, 1.1))
             ax1.set_yticks([0])
             ax1.yaxis.grid(True)
@@ -162,7 +142,7 @@ class PlotInput:
     def record_and_plot(self):
         stream = sd.InputStream(channels=max(self.channels), device=self.device,
                                 samplerate=self.samplerate, blocksize=self.blocksize, callback=self.audio_callback)
-        ani = FuncAnimation(self.figure, self.update_plot, interval=self.interval, blit=True)
+        _ = FuncAnimation(self.figure, self.update_plot, interval=self.interval, blit=True)
         with stream:
             plt.show()
 

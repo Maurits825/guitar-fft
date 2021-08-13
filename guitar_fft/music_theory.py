@@ -16,7 +16,7 @@ GUITAR_STRINGS = 6
 
 TOTAL_NOTES = 12
 
-#TODO add below is json file?
+# TODO add below is json file?
 MUSICAL_ALPHABET = ['A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#',
                     'G', 'G#']
 SCALE_PATTERNS = {
@@ -67,7 +67,7 @@ class MusicTheory:
         unique_notes = []
         for frequency in peak_frequencies[:GUITAR_STRINGS]:
             note = self.get_note(frequency)
-            note_letter = re.search(r'(.*?)[0-9].*', note).group(1)
+            note_letter = re.search(r'(.*?)[0-9].*', str(note)).group(1)
             if note_letter not in unique_notes:
                 unique_notes.append(note_letter)
 
